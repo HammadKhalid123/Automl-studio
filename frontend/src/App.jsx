@@ -475,7 +475,7 @@ function Workspace({ onLogout, initialAccount }) {
       <main className="main">
         <header className="topbar">
           <div>
-            <span className="kicker">AUTOML STUDIO / LOCAL WORKSPACE</span>
+            <span className="kicker">AUTOML STUDIO</span>
             <h1>{accountOpen ? "Account" : STEPS[step][0]}</h1>
             <p>{accountOpen ? "Profile and account settings" : STEPS[step][1]}</p>
           </div>
@@ -525,13 +525,13 @@ function TopNav({ step, done, moveTo, hasDataset, account, accountActive, onOpen
       <div className="brand"><b><Icon name="sparkle" size={25} /></b><span>AutoML Studio</span></div>
       <div className="workflow">
         {STEPS.map(([name, description, icon], index) => (
-          <button key={name} title={!hasDataset && index !== 0 && index !== 6 ? "Upload dataset first" : name} aria-disabled={!hasDataset && index !== 0 && index !== 6} data-tooltip={!hasDataset && index !== 0 && index !== 6 ? "Upload dataset first" : undefined} className={`nav-step ${step === index ? "active" : ""} ${done.has(index) ? "done" : ""} ${!hasDataset && index !== 0 && index !== 6 ? "locked" : ""}`} onClick={() => moveTo(index)}>
-            <strong>{done.has(index) && index !== step ? <Icon name="target" size={17} /> : <Icon name={icon} size={17} />}</strong>
+          <button key={name} title={!hasDataset && index !== 0 && index !== 6 ? "Upload dataset first" : name} aria-disabled={!hasDataset && index !== 0 && index !== 6} aria-current={!accountActive && step === index ? "page" : undefined} data-tooltip={!hasDataset && index !== 0 && index !== 6 ? "Upload dataset first" : undefined} className={`nav-step ${!accountActive && step === index ? "active" : ""} ${done.has(index) ? "done" : ""} ${!hasDataset && index !== 0 && index !== 6 ? "locked" : ""}`} onClick={() => moveTo(index)}>
+            <strong><Icon name={icon} size={17} /></strong>
             <span><b>{name}</b><small>{description}</small></span>
           </button>
         ))}
       </div>
-      <div className="nav-account"><button type="button" className={`nav-account-button ${accountActive ? "active" : ""}`} onClick={onOpenAccount} title={account?.email || "Account settings"} aria-label="Open account settings"><strong><Icon name="user" size={17} /></strong><span>Account</span></button></div>
+      <div className="nav-account"><button type="button" className={`nav-account-button ${accountActive ? "active" : ""}`} onClick={onOpenAccount} title={account?.email || "Account settings"} aria-label="Open account settings" aria-current={accountActive ? "page" : undefined}><strong><Icon name="user" size={17} /></strong><span>Account</span></button></div>
       <div className="top-nav-progress"><span>WORKFLOW</span><b>{done.size} of 6 steps</b><div><i style={{ width: `${(done.size / 6) * 100}%` }} /></div></div>
     </nav>
   );

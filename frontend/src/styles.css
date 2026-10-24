@@ -475,3 +475,128 @@ body { color: var(--ink); background: var(--page); }
 .feature-run-details b { font-size: 11px; }
 .feature-run-details p { margin: 6px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
 @media (max-width: 700px) { .feature-run-details { grid-template-columns: 1fr; } }
+
+/* Mobile layout: keep workflow navigation readable and let wide data scroll inside its own panel. */
+@media (max-width: 760px) {
+  .app { display: flex; flex-direction: column; min-width: 0; }
+  .top-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand account" "workflow workflow";
+    align-items: center;
+    gap: 8px 10px;
+    min-width: 0;
+    padding: 10px 12px 9px;
+  }
+  .top-nav > .brand { grid-area: brand; min-width: 0; }
+  .top-nav > .nav-account { grid-area: account; margin: 0; }
+  .top-nav > .workflow {
+    grid-area: workflow;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 0 5px;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .top-nav .nav-step {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 80px;
+    min-height: 39px;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+  .top-nav .nav-step strong { width: 25px; height: 25px; flex-basis: 25px; }
+  .top-nav .nav-step span { display: grid; }
+  .top-nav .nav-step b { font-size: 10px; }
+  .top-nav .nav-step small { display: none; }
+  .top-nav .nav-account-button { min-height: 38px; }
+  .top-nav .nav-account-button.active { color: #612832; background: #f8eee3; }
+
+  .main { width: 100%; min-width: 0; padding: 20px 14px 28px; overflow: hidden; }
+  .main > * { min-width: 0; }
+  .topbar { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 16px; }
+  .topbar h1 { font-size: clamp(22px, 6vw, 28px); overflow-wrap: anywhere; }
+  .topbar .top-actions { justify-content: flex-start; gap: 7px; }
+  .top-actions > * { max-width: 100%; }
+  .api-status { white-space: normal; overflow-wrap: anywhere; }
+  .dashboard-signout { min-height: 40px; }
+  .card, .drop-card { min-width: 0; padding: 15px; border-radius: 13px; }
+  .drop-card { min-height: 235px; }
+  .section-title { align-items: flex-start; }
+  .section-title h3 { font-size: 15px; }
+  .section-title p { line-height: 1.45; overflow-wrap: anywhere; }
+  .two-col, .safe-list, .run-meta, .chart-grid, .feature-run-details,
+  .clean-two-col, .clean-summary-list, .account-grid { grid-template-columns: minmax(0, 1fr); }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stat { min-width: 0; padding: 11px; }
+  .stat b { font-size: clamp(17px, 5vw, 22px); overflow-wrap: anywhere; }
+  .task-grid, .model-grid { grid-template-columns: minmax(0, 1fr); }
+  .train-summary { grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 15px 0; }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .metric { min-width: 0; padding: 10px; }
+  .metric b { font-size: 17px; overflow-wrap: anywhere; }
+  .right { width: 100%; min-width: 0; padding: 0 14px 22px; }
+  .right .card { padding: 15px; }
+  .assistant-chat { max-height: 280px; }
+  .assistant-message { max-width: 96%; }
+  .chart-grid { grid-template-columns: minmax(0, 1fr); }
+  .chart-card { min-width: 0; padding: 12px; }
+  .donut-wrap { grid-template-columns: minmax(90px, 115px) minmax(0, 1fr); gap: 8px; }
+  .donut-legend { min-width: 0; }
+  .bar-row { grid-template-columns: minmax(58px, .9fr) minmax(35px, 2fr) 38px; gap: 6px; }
+  .bar-row > span { overflow-wrap: anywhere; }
+  .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  table { min-width: 620px; }
+  .run-compare table { min-width: 900px; }
+  .run-item summary { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 7px; padding: 10px; }
+  .run-item summary > b { min-width: 0; overflow-wrap: anywhere; }
+  .run-item summary > span:not(.status) { min-width: 0; overflow-wrap: anywhere; }
+  .run-item summary > .run-date { grid-column: 2 / -1; }
+  .run-detail { padding: 11px; }
+  .run-detail-head { align-items: flex-start; flex-wrap: wrap; }
+  .account-hero { flex-wrap: wrap; gap: 11px; padding: 15px; }
+  .account-hero > div:nth-child(2) { flex: 1 1 calc(100% - 70px); }
+  .account-verified { margin-left: 0; white-space: normal; }
+  .account-facts > div { flex-direction: column; gap: 5px; }
+  .account-facts b { text-align: left; }
+  .clean-panel { padding: 12px; }
+  .clean-tabs { scrollbar-width: thin; }
+  .clean-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .clean-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; padding: 7px 0; }
+  .clean-type-row { align-items: flex-start; flex-wrap: wrap; }
+  .clean-type-row select { width: 100%; }
+  .clean-footer { flex-wrap: wrap; padding: 11px 12px; }
+  .clean-footer .btn { flex: 1 1 120px; }
+  .field input, .field select, .field textarea, input, select, textarea { min-width: 0; max-width: 100%; }
+  .auth-shell { min-height: 100svh; padding: 24px 14px; }
+  .auth-card { width: min(100%, 440px); padding: 22px 19px; }
+  .auth-brand { margin-bottom: 20px; }
+  .auth-brand b { font-size: clamp(19px, 5.5vw, 23px); }
+  .auth-heading h1 { font-size: 25px; }
+  .auth-footer { align-items: flex-start; }
+}
+
+@media (max-width: 390px) {
+  .top-nav { padding-right: 9px; padding-left: 9px; }
+  .top-nav .brand { gap: 7px; font-size: 13px; }
+  .top-nav .brand b { width: 31px; height: 31px; }
+  .top-nav .nav-account-button { gap: 5px; padding: 4px 7px; font-size: 10px; }
+  .top-nav .nav-step { min-width: 75px; padding-right: 6px; padding-left: 6px; }
+  .main { padding-right: 10px; padding-left: 10px; }
+  .right { padding-right: 10px; padding-left: 10px; }
+  .card, .drop-card { padding: 12px; }
+  .stat-grid, .metric-grid, .clean-stats { grid-template-columns: minmax(0, 1fr); }
+  .oauth-buttons { grid-template-columns: minmax(0, 1fr); }
+  .donut-wrap { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Preserve each workflow item's own icon; selection is shown through an inverse icon tile. */
+.top-nav .nav-step.active strong { color: #fff7ee; background: #702f39; }
+.top-nav .nav-step.done:not(.active) strong { color: #702f39; background: #fff7ee; }
