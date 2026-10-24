@@ -600,3 +600,15 @@ body { color: var(--ink); background: var(--page); }
 /* Preserve each workflow item's own icon; selection is shown through an inverse icon tile. */
 .top-nav .nav-step.active strong { color: #fff7ee; background: #702f39; }
 .top-nav .nav-step.done:not(.active) strong { color: #702f39; background: #fff7ee; }
+
+/* Keep Chromium autofill fields on the same cream surface as the auth form. */
+.auth-form input:-webkit-autofill,
+.auth-form input:-webkit-autofill:hover,
+.auth-form input:-webkit-autofill:focus,
+.auth-form input:-webkit-autofill:active {
+  -webkit-text-fill-color: #55232b;
+  caret-color: #55232b;
+  -webkit-box-shadow: 0 0 0 1000px #fffaf5 inset;
+  box-shadow: 0 0 0 1000px #fffaf5 inset;
+  transition: background-color 99999s ease-out 0s;
+}
