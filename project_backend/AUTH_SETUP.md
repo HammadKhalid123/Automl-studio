@@ -28,6 +28,8 @@ Set the corresponding client ID and secret in the backend environment. `FRONTEND
 
 ## Database deployment
 
-For PostgreSQL, set `DATABASE_URL` to a `postgresql://` or `postgresql+psycopg://` URL. The backend normalizes the former to the psycopg driver. Back up the configured database and the existing dataset/model artifact folders together; the latter remain file-backed for compatibility with current training and download behavior.
+For a hosted deployment, connect a persistent PostgreSQL database and set `DATABASE_URL` to its connection string. FastAPI Cloud's Neon integration injects `DATABASE_URL` when a Neon database is linked to the app. The same PostgreSQL database stores accounts, verification tokens, and run history/results. Without it, the app falls back to local SQLite; on hosts with an ephemeral filesystem, accounts and history disappear on restart or scale-to-zero. The API health response reports `persistent_database` and `persistent_history`, and startup logs a warning when SQLite is active.
+
+Uploaded datasets and trained pipeline files still live on the app filesystem. They can disappear on restart even when account/history persistence is configured; use external object storage or a persistent volume before relying on those files long-term. Run history keeps its compact report in PostgreSQL, so prior evaluations remain visible after a restart, but model download/prediction may need the artifact to be retrained if that file is gone.
 
 In production, serve both origins over HTTPS, use a unique long `JWT_SECRET`, restrict `FRONTEND_URL` to the deployed UI, and register only the deployed OAuth callback URLs. Authenticated data APIs use bearer JWTs; the browser keeps them in tab-scoped session storage so refreshes work and signing out clears the local workspace state.

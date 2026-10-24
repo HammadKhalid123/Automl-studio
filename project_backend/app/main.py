@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.responses import Response
@@ -14,6 +15,8 @@ from app.core import config, storage
 from app.services import job_runner
 from app.db.session import cleanup_auth_records, init_db
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -21,8 +24,10 @@ async def lifespan(_app: FastAPI):
     if len(config.JWT_SECRET) < 32:
         raise RuntimeError("Set a JWT_SECRET with at least 32 characters in project_backend/.env before starting the API.")
     config.ensure_dirs()
-    storage.ensure_storage_dirs()
     init_db()
+    if config.DATABASE_URL.startswith("sqlite:"):
+        logger.warning("DATABASE_URL is not configured; accounts and run history use local SQLite and may be lost when the host restarts.")
+    storage.ensure_storage_dirs()
     cleanup_auth_records()
     storage.cleanup_expired()
     job_runner.recover_interrupted_jobs()
@@ -67,7 +72,8 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    durable = not config.DATABASE_URL.startswith("sqlite:")
+    return {"status": "ok", "persistent_database": durable, "persistent_history": durable}
 
 
 @app.get("/favicon.ico", include_in_schema=False)

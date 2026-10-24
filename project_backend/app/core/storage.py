@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from app.core import config, limits
 from app.services.data_profile import DataValidationError
+from app.db.session import DATABASE_URL, SessionLocal
 
 DATASETS_DIR = config.DATA_DIR / "datasets"
 JOBS_DIR = config.DATA_DIR / "jobs"
@@ -49,19 +50,22 @@ def ensure_storage_dirs():
         for folder in (DATASETS_DIR, JOBS_DIR, MODELS_DIR):
             folder.mkdir(parents=True, exist_ok=True)
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        with _db_connection() as connection:
-            connection.execute("""CREATE TABLE IF NOT EXISTS jobs (
-                job_id TEXT PRIMARY KEY,
-                status TEXT NOT NULL,
-                dataset_id TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                payload_json TEXT NOT NULL,
-                report_json TEXT
-            )""")
-            connection.execute("CREATE INDEX IF NOT EXISTS idx_jobs_dataset_created ON jobs(dataset_id, created_at DESC)")
-            connection.execute("CREATE INDEX IF NOT EXISTS idx_jobs_status_created ON jobs(status, created_at DESC)")
-            _migrate_job_files(connection)
+        if DATABASE_URL.startswith("sqlite:"):
+            with _db_connection() as connection:
+                connection.execute("""CREATE TABLE IF NOT EXISTS jobs (
+                    job_id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    dataset_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    report_json TEXT
+                )""")
+                connection.execute("CREATE INDEX IF NOT EXISTS idx_jobs_dataset_created ON jobs(dataset_id, created_at DESC)")
+                connection.execute("CREATE INDEX IF NOT EXISTS idx_jobs_status_created ON jobs(status, created_at DESC)")
+                _migrate_job_files(connection)
+        else:
+            _migrate_job_files_to_server_db()
         _storage_initialized = True
 
 
@@ -105,6 +109,37 @@ def _migrate_job_files(connection):
             "INSERT OR IGNORE INTO jobs(job_id,status,dataset_id,created_at,updated_at,payload_json,report_json) VALUES(?,?,?,?,?,?,?)",
             (payload.get("job_id", path.stem), payload.get("status", "failed"), payload.get("dataset_id", ""), created, payload.get("finished_at") or created, encoded, report_json),
         )
+
+
+def _migrate_job_files_to_server_db():
+    from app.db.models import JobRecord
+
+    with SessionLocal.begin() as session:
+        for path in JOBS_DIR.glob("*.json"):
+            if not is_valid_id(path.stem):
+                continue
+            try:
+                payload = read_json(path)
+                encoded = json.dumps(payload, allow_nan=False)
+            except (OSError, json.JSONDecodeError, ValueError):
+                continue
+            if session.get(JobRecord, payload.get("job_id", path.stem)) is not None:
+                continue
+            report_json = None
+            model_id = payload.get("model_id")
+            report_path = MODELS_DIR / model_id / "report.json" if model_id and is_valid_id(model_id) else None
+            if report_path and report_path.is_file():
+                try:
+                    report_json = report_path.read_text(encoding="utf-8")
+                except OSError:
+                    pass
+            created = payload.get("created_at") or ""
+            session.add(JobRecord(
+                job_id=payload.get("job_id", path.stem), user_id=payload.get("user_id"),
+                status=payload.get("status", "failed"), dataset_id=payload.get("dataset_id", ""),
+                created_at=created, updated_at=payload.get("finished_at") or created,
+                payload_json=encoded, report_json=report_json,
+            ))
 
 
 def new_id():
@@ -313,6 +348,24 @@ def save_job(job):
         report_path = MODELS_DIR / model_id / "report.json"
         if report_path.is_file():
             report_json = report_path.read_text(encoding="utf-8")
+    if not DATABASE_URL.startswith("sqlite:"):
+        from sqlalchemy.dialects.postgresql import insert
+        from app.db.models import JobRecord
+
+        values = {
+            "job_id": job["job_id"], "user_id": job.get("user_id"), "status": job["status"],
+            "dataset_id": job["dataset_id"], "created_at": job.get("created_at", ""),
+            "updated_at": job.get("finished_at") or job.get("started_at") or job.get("created_at", ""),
+            "payload_json": encoded, "report_json": report_json,
+        }
+        statement = insert(JobRecord).values(**values).on_conflict_do_update(
+            index_elements=[JobRecord.job_id],
+            set_={key: value for key, value in values.items() if key != "job_id"},
+        )
+        with SessionLocal.begin() as session:
+            session.execute(statement)
+        write_json(job_path(job["job_id"]), job)
+        return
     with _db_connection() as connection:
         connection.execute(
             """INSERT INTO jobs(job_id,status,dataset_id,created_at,updated_at,payload_json,report_json)
@@ -326,6 +379,15 @@ def save_job(job):
 
 def load_job(job_id):
     ensure_storage_dirs()
+    if not DATABASE_URL.startswith("sqlite:"):
+        from app.db.models import JobRecord
+        from sqlalchemy import select
+
+        with SessionLocal() as session:
+            row = session.scalar(select(JobRecord).where(JobRecord.job_id == job_id))
+            if row:
+                return json.loads(row.payload_json)
+        raise NotFoundError("Job not found.")
     with _db_connection() as connection:
         row = connection.execute("SELECT payload_json FROM jobs WHERE job_id=?", (job_id,)).fetchone()
     if row:
@@ -340,6 +402,15 @@ def load_job_report(job_id):
     if not is_valid_id(job_id):
         raise NotFoundError("Job not found.")
     ensure_storage_dirs()
+    if not DATABASE_URL.startswith("sqlite:"):
+        from app.db.models import JobRecord
+        from sqlalchemy import select
+
+        with SessionLocal() as session:
+            row = session.scalar(select(JobRecord).where(JobRecord.job_id == job_id))
+            if not row or not row.report_json:
+                raise NotFoundError("Run results not found.")
+            return json.loads(row.report_json)
     with _db_connection() as connection:
         row = connection.execute("SELECT report_json FROM jobs WHERE job_id=?", (job_id,)).fetchone()
     if not row or not row["report_json"]:
@@ -349,6 +420,22 @@ def load_job_report(job_id):
 
 def list_jobs():
     ensure_storage_dirs()
+    if not DATABASE_URL.startswith("sqlite:"):
+        from app.db.models import JobRecord
+        from sqlalchemy import select
+
+        with SessionLocal() as session:
+            rows = session.scalars(select(JobRecord).order_by(JobRecord.created_at.desc())).all()
+            jobs = []
+            for row in rows:
+                try:
+                    job = json.loads(row.payload_json)
+                    if row.report_json:
+                        job["_report"] = json.loads(row.report_json)
+                    jobs.append(job)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+            return jobs
     with _db_connection() as connection:
         rows = connection.execute("SELECT payload_json, report_json FROM jobs ORDER BY created_at DESC").fetchall()
     jobs = []

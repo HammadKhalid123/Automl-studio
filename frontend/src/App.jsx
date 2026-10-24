@@ -150,6 +150,7 @@ function Workspace({ onLogout, initialAccount }) {
   ]);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [apiOnline, setApiOnline] = useState(null);
+  const [persistentDatabase, setPersistentDatabase] = useState(null);
   const [cleanAppliedNotice, setCleanAppliedNotice] = useState(0);
   const assistantChatRef = useRef(null);
 
@@ -225,8 +226,11 @@ function Workspace({ onLogout, initialAccount }) {
     let active = true;
     const checkHealth = async () => {
       try {
-        await api("/health");
-        if (active) setApiOnline(true);
+        const health = await api("/health");
+        if (active) {
+          setApiOnline(true);
+          setPersistentDatabase(Boolean(health.persistent_database));
+        }
       } catch {
         if (active) setApiOnline(false);
       }
@@ -477,7 +481,7 @@ function Workspace({ onLogout, initialAccount }) {
           </div>
           <div className="top-actions">
             {dataset && <span className="file-label">{file?.name || dataset.original_name}</span>}
-            <span className={`api-status ${apiOnline === false ? "offline" : apiOnline === true ? "online" : "checking"}`}><i />{apiOnline === false ? "Backend offline" : apiOnline === true ? "API ready" : "Checking API..."}</span>
+            <span className={`api-status ${apiOnline === false ? "offline" : apiOnline === true ? "online" : "checking"}`}><i />{apiOnline === false ? "Backend offline" : apiOnline === true ? persistentDatabase === false ? "API ready · temporary database" : "API ready" : "Checking API..."}</span>
             <button className="btn primary dashboard-signout" onClick={onLogout}><Icon name="logout" size={15} />Sign out</button>
           </div>
         </header>
