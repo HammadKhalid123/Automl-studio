@@ -160,6 +160,10 @@ function Workspace({ onLogout, initialAccount }) {
   }, [initialAccount]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step, accountOpen]);
+
+  useEffect(() => {
       try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({ step, dataset, datasetCharts, target, task, exclude, include, excludeFlagged, numericImpute, categoricalImpute, scaling, outlierMethod, removeDuplicates, columnTypes, appliedCleaning, runAll, selectedModels, job, results, predictionRows, predictions, selectedColumn, activity, assistantMessages, selectedRunIds }));
     } catch (storageError) { console.warn("Could not save workspace in this browser tab.", storageError); }
@@ -267,7 +271,6 @@ function Workspace({ onLogout, initialAccount }) {
     api(`/jobs/${job.job_id}/results`)
       .then((response) => {
         setResults(response);
-        setStep(5);
         setActivity(["Training completed", `Best model: ${response.best_model}`]);
       })
       .catch((requestError) => setError(requestError.message));
@@ -656,7 +659,7 @@ function ResultsStep({ job, results, predictionRows, setPredictionRows, predicti
     <section className="card predict-box"><SectionTitle title="Try the trained model" hint="Use the feature column names in a JSON object" /><textarea value={predictionRows} onChange={(event) => setPredictionRows(event.target.value)} /><button className="btn primary" onClick={predict}><Icon name="play" size={15} />Run prediction</button>{predictions && <pre className="prediction">{JSON.stringify(predictions, null, 2)}</pre>}</section></>;
 }
 function HistoryStep({ history = [], datasetId, selectedRunIds, setSelectedRunIds, openRun }) {
-  const [datasetOnly, setDatasetOnly] = useState(Boolean(datasetId));
+  const [datasetOnly, setDatasetOnly] = useState(false);
   const visibleHistory = datasetOnly && datasetId ? history.filter((run) => run.dataset_id === datasetId) : history;
   const selected = visibleHistory.filter((run) => selectedRunIds.includes(run.job_id) && run.status === "completed");
   const toggle = (id) => setSelectedRunIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id].slice(-3));
