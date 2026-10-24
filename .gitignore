@@ -1,0 +1,28 @@
+# Secrets and local environment files. Keep .env.example templates tracked.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python local environments and generated files.
+**/venv/
+**/.venv/
+__pycache__/
+*.py[cod]
+
+# Local databases, uploaded data, and trained model artifacts.
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.db
+project_backend/data/
+project_backend/artifacts/
+
+# Frontend dependencies and build output.
+frontend/node_modules/
+frontend/dist/
+
+# Local logs.
+*.log
