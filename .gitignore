@@ -26,3 +26,6 @@ frontend/dist/
 
 # Local logs.
 *.log
+
+project_backend/test_mail.py
+project_backend/test_groq.py
