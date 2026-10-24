@@ -57,7 +57,14 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 MAIL_FROM = os.getenv("MAIL_FROM", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+# FastAPI Cloud provides FASTAPI_PUBLIC_URL at runtime. Prefer an explicit
+# BACKEND_URL when configured, otherwise use the platform's public app URL so
+# OAuth providers never receive the local-development callback in production.
+BACKEND_URL = (
+    os.getenv("BACKEND_URL")
+    or os.getenv("FASTAPI_PUBLIC_URL")
+    or "http://127.0.0.1:8000"
+).rstrip("/")
 
 
 def ensure_dirs():
